@@ -1,0 +1,31 @@
+# Maven target build output
+/target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# OS/Editor specific
+.DS_Store
+Thumbs.db
+
+# Logs and temp
+*.log
+*.tmp
+
+# Language cache
+lang/*.cache.yml
+
+# Config files that shouldn't be tracked (if needed)
+config.yml
+
+# Java backup files
+*.bak

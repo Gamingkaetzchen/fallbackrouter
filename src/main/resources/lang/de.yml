@@ -1,0 +1,4 @@
+fallback:
+  kicked: "Du wurdest von %server% gekickt. Versuche Fallback..."
+  all_offline: "Alle Fallback-Server sind offline."
+  connected: "Erfolgreich mit %target% verbunden."
