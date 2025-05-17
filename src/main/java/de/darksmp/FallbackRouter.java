@@ -1,20 +1,23 @@
 package de.darksmp;
 
+import java.nio.file.Path;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import javax.inject.Inject;
+
+import org.slf4j.Logger;
+
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.player.KickedFromServerEvent;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
-import net.kyori.adventure.text.Component;
-import org.slf4j.Logger;
 
-import javax.inject.Inject;
-import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import net.kyori.adventure.text.Component;
 
 @Plugin(id = "fallbackrouter", name = "FallbackRouter", version = "1.5")
 public class FallbackRouter {
@@ -28,9 +31,15 @@ public class FallbackRouter {
     public FallbackRouter(ProxyServer server, @DataDirectory Path dataDirectory, Logger logger) throws Exception {
         this.server = server;
         this.logger = logger;
+
+        // 🔁 Sprachdateien aus JAR extrahieren (falls sie noch nicht vorhanden sind)
+        new LanguageFileExporter(dataDirectory).exportIfMissing();
+
+        // ⚙️ Config und Sprache laden
         this.fallbackMap = FallbackRouterConfig.load(dataDirectory);
         this.messages = new Messages(FallbackRouterConfig.language);
-        this.logger.info("[FallbackRouter] Loaded with language: " + FallbackRouterConfig.language);
+
+        logger.info("[FallbackRouter] Loaded with language: " + FallbackRouterConfig.language);
     }
 
     @Subscribe
