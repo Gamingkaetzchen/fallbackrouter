@@ -198,3 +198,35 @@ filter after reload, allowing punishment exclusions to take effect immediately.
 If the section is omitted, the previous built-in shutdown/timeout matching and
 retry behavior are preserved. New default configs include a commented example;
 existing files are never rewritten. Apply changes with `/fallbackrouter reload`.
+
+## Queue plugins that skip a fallback server
+
+When the queue plugin redirects a connection from a queue server such as `fallback-default` to a
+lobby, FallbackRouter records the selected destination in `ServerPreConnectEvent`.
+A successful skip is left intact. If that replacement fails, the original
+configured fallback is retried directly once before advancing the chain.
+This preserves the limbo when a lobby goes offline between the queue plugin's checks
+and its connection attempt, without globally disabling queue-server skipping.
+
+The direct recovery attempt restores the original target after normal-priority
+pre-connect handlers. Cancellation results are respected, and normal/manual
+connections with no active fallback chain are untouched. If the original target
+also fails, the next configured fallback is tried; the direct retry is bounded
+so a stale queue check cannot cause an endless loop. Kick-reason restrictions
+still apply before recovery, including punishment exclusions. Recovery state
+is cleared on connection success or disconnect. No the queue plugin dependency is required.
+Other plugins with later/same-priority handlers may still affect the final target.
+
+## Expected connection-refused diagnostics
+
+On the standard Velocity Log4j backend, connection-refused stack traces for
+active FallbackRouter-owned attempts are replaced with a short translated warning
+naming the actual destination after queue-plugin redirection. Full exception
+details remain available at DEBUG level on the plugin logger.
+Only Velocity's specific ConnectedPlayer connection-error message, a refused
+connection exception, a matching player UUID and an active matching destination
+are eligible. Unrelated/manual connections, other exceptions and other loggers
+keep their original diagnostics. This changes logging only, not retry behavior.
+The filter is removed on proxy shutdown. It depends on Velocity's provided
+Log4j Core backend; if the backend or log format is incompatible, the original
+error remains visible. Log4j is not bundled or replaced by the plugin.
