@@ -144,8 +144,57 @@ chain is exhausted, the player is disconnected with `fallback.all_offline`.
 Attempt state is cleared on successful connection or player disconnect. A chain
 already in progress keeps its original rules and message across a reload.
 
-Sources with no destinations and unrelated kicks (for example bans) retain
+With the kick filter omitted, sources with no destinations and unrelated kicks retain
 Velocity's original handling. A failed voluntary switch while the player still
 has a current server also retains Velocity's handling. This plugin does not
 replace the proxy's initial login server selection. Other plugins that modify
 kick results may affect routing.
+
+## Filtering kick reasons
+
+Velocity exposes an optional Adventure Component as the kick reason, not a
+shutdown/ban enum. Backends and plugins can supply custom text; translatable
+components may contain translation keys instead of displayed text.
+Configure `kick-reasons` to classify your own messages:
+
+```yaml
+kick-reasons:
+  whitelist: true
+  fallback-on-no-reason: true
+  reasons:
+    - server_shutdown
+    - 'Server closed'
+    - 'Restart programmato'
+    - 'regex:manutenzione|riavvio'
+```
+
+With `whitelist: true`, only matching non-empty reasons permit fallback.
+With `false`, matching reasons forbid fallback and all other non-empty reasons
+permit it. For example, a blacklist can contain `banned`, `punishment` and
+`regex:sei stato (bannato|espulso)`. A blacklist cannot distinguish an unknown
+punishment text from a custom shutdown; a whitelist is preferable when only
+known shutdown messages should be recovered.
+
+Plain strings match substrings without case sensitivity. `regex:` entries use
+Java regex **search**, also case-insensitive; use `^` and `$` for an entire-reason
+match. Matching uses plain component text (including untranslated keys where
+present), ignoring component styling and legacy section-sign color codes. The
+original Component is retained for a denied kick's disconnect message.
+
+`fallback-on-no-reason` independently controls absent, empty or whitespace-only
+reasons, commonly used for network failures; it applies in either list mode.
+Whitelist plus `reasons: []` denies all textual reasons; blacklist plus an empty
+list allows all textual reasons. A configured section requires a string list;
+invalid lists, boolean types or regexes reject loading/reload atomically.
+
+When this section is present, a denied reason explicitly disconnects with the
+original reason, preventing Velocity's default fallback as well. The filter also
+applies to failures during an active fallback chain, so a punishment on a
+fallback destination cannot be bypassed by trying the next server. Failed
+voluntary switches while still on a healthy current server retain native handling.
+An ongoing chain keeps its original destination list but uses the latest kick
+filter after reload, allowing punishment exclusions to take effect immediately.
+
+If the section is omitted, the previous built-in shutdown/timeout matching and
+retry behavior are preserved. New default configs include a commented example;
+existing files are never rewritten. Apply changes with `/fallbackrouter reload`.

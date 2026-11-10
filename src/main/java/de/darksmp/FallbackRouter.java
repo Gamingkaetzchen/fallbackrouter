@@ -27,16 +27,15 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
-@Plugin(id = "fallbackrouter", name = "FallbackRouter", version = "1.2.4")
+@Plugin(id = "fallbackrouter", name = "FallbackRouter", version = "1.2.5")
 public class FallbackRouter {
 
     private final ProxyServer server;
     private final Path dataDirectory;
     private volatile Settings settings;
 
-    private record Settings(FallbackRules rules, Messages messages) {}
+    private record Settings(FallbackRules rules, Messages messages, KickReasonPolicy kickReasons) {}
     private final Logger logger;
     private final Map<UUID, FallbackAttempt> fallbackAttempts = new ConcurrentHashMap<>();
 
@@ -60,7 +59,7 @@ public class FallbackRouter {
         Messages messages = new Messages(dataDirectory, loaded.language());
         // Publish once, only after all parsing and message loading succeed. Readers
         // must never observe new routes paired with the previous language settings.
-        settings = new Settings(loaded.rules(), messages);
+        settings = new Settings(loaded.rules(), messages, loaded.kickReasons());
         logger.info("[FallbackRouter] " + messages.get("status.loaded", Map.of("language", loaded.language())));
     }
 
@@ -117,10 +116,19 @@ public class FallbackRouter {
         Settings snapshot = settings;
         fallbackAttempts.compute(playerId, (id, previous) -> {
             FallbackAttempt attempt = previous;
-            if (attempt == null || !source.equalsIgnoreCase(attempt.pendingServer())) {
-                // A failed voluntary server switch must not move a player off a healthy server.
-                if (event.kickedDuringServerConnect() && player.getCurrentServer().isPresent()) return null;
-                if (!isServerOutage(event)) return null;
+            boolean continuing = attempt != null && source.equalsIgnoreCase(attempt.pendingServer());
+            if (!continuing && event.kickedDuringServerConnect() && player.getCurrentServer().isPresent()) return null;
+            if ((!continuing || snapshot.kickReasons().configured())
+                    && !snapshot.kickReasons().allows(event.getServerKickReason())) {
+                // Returning unchanged here could leave Velocity's own redirect active.
+                // Enforce a configured punishment exclusion before any recovery send.
+                if (snapshot.kickReasons().configured()) {
+                    event.setResult(KickedFromServerEvent.DisconnectPlayer.create(event.getServerKickReason()
+                            .orElseGet(() -> Component.text(snapshot.messages().getRaw("fallback.no_reason")))));
+                }
+                return null;
+            }
+            if (!continuing) {
                 List<String> targets = snapshot.rules().getFallbacks(source);
                 if (targets.isEmpty()) return null; // Preserve Velocity's result for unhandled sources.
                 attempt = new FallbackAttempt(List.copyOf(targets), Set.of(source.toLowerCase(Locale.ROOT)),
@@ -151,19 +159,6 @@ public class FallbackRouter {
         }
         event.setResult(KickedFromServerEvent.DisconnectPlayer.create(attempt.exhaustedMessage()));
         return null;
-    }
-
-    private boolean isServerOutage(KickedFromServerEvent event) {
-        // Velocity supplies no backend kick reason for network errors and timeouts.
-        if (event.getServerKickReason().isEmpty()) return true;
-        String reason = PlainTextComponentSerializer.plainText()
-                .serialize(event.getServerKickReason().get()).toLowerCase(Locale.ROOT);
-        return reason.isBlank() || reason.contains("server closed") || reason.contains("disconnected")
-                || reason.contains("timed out") || reason.contains("server_shutdown")
-                || reason.contains("server shutdown") || reason.contains("server restarting")
-                || reason.contains("server is restarting") || reason.contains("server shutting down")
-                || reason.contains("server is shutting down") || reason.contains("server stopping")
-                || reason.contains("server is stopping");
     }
 
     @Subscribe

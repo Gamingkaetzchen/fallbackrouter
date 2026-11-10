@@ -1,4 +1,5 @@
 fallback:
+  no_reason: "Disconnected from the server."
   kicked: "You were kicked from %server%. Trying fallback..."
   all_offline: "All fallback servers are offline."
   connected: "Successfully connected to %target%."

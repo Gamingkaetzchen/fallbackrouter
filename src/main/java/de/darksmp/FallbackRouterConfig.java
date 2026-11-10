@@ -9,7 +9,7 @@ import java.util.*;
 
 public class FallbackRouterConfig {
 
-    public record LoadedConfig(FallbackRules rules, String language) {}
+    public record LoadedConfig(FallbackRules rules, String language, KickReasonPolicy kickReasons) {}
 
     public static LoadedConfig load(Path dataDirectory) throws Exception {
         Path configPath = dataDirectory.resolve("config.yml");
@@ -18,6 +18,25 @@ public class FallbackRouterConfig {
             Files.createDirectories(dataDirectory);
             Files.writeString(configPath, """
                     language: "en"
+
+                    # Optional kick filter. true: allow listed reasons; false: deny listed reasons.
+                    # Text entries are case-insensitive substrings; regex: uses regex search.
+                    # Without this section, the previous outage detection behavior is retained.
+                    # kick-reasons:
+                    #   whitelist: true
+                    #   fallback-on-no-reason: true
+                    #   reasons:
+                    #     - server closed
+                    #     - disconnected
+                    #     - timed out
+                    #     - server_shutdown
+                    #     - server shutdown
+                    #     - server restarting
+                    #     - server is restarting
+                    #     - server shutting down
+                    #     - server is shutting down
+                    #     - server stopping
+                    #     - server is stopping
 
                     # Source server -> fallback servers, in priority order.
                     fallbacks:
@@ -96,7 +115,7 @@ public class FallbackRouterConfig {
                     }
                 }
             }
-            return new LoadedConfig(rules, language);
+            return new LoadedConfig(rules, language, KickReasonPolicy.from(config));
         }
     }
 }
