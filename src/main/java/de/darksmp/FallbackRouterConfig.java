@@ -11,7 +11,7 @@ public class FallbackRouterConfig {
 
     public static String language = "en";
 
-    public static Map<String, List<String>> load(Path dataDirectory) throws Exception {
+    public static FallbackRules load(Path dataDirectory) throws Exception {
         Path configPath = dataDirectory.resolve("config.yml");
 
         if (!Files.exists(configPath)) {
@@ -36,6 +36,8 @@ public class FallbackRouterConfig {
                     #   fallback-a: [source-a]
                     #   fallback-b: [source-b]
                     #   lobby: [source-a, source-b]
+                    # Source selectors can use explicit regexes, e.g. 'regex:^source-a-.*$'.
+                    # Regexes match the whole source name, case-sensitively.
                     """);
         }
 
@@ -52,7 +54,7 @@ public class FallbackRouterConfig {
                         "config.yml must contain 'fallbacks' or 'fallback-per-servers'");
             }
 
-            Map<String, List<String>> fallbackMap = new LinkedHashMap<>();
+            FallbackRules rules = new FallbackRules();
             if (config.containsKey("fallback-per-servers")) {
                 if (!(config.get("fallback-per-servers") instanceof Map<?, ?> inverseFallbacks)) {
                     throw new IllegalArgumentException(
@@ -64,16 +66,15 @@ public class FallbackRouterConfig {
                         throw new IllegalArgumentException(
                                 "Each 'fallback-per-servers' entry must map a server name to a list of source servers");
                     }
+                    List<String> sourceNames = new ArrayList<>();
                     for (Object sourceValue : sources) {
                         if (!(sourceValue instanceof String source) || source.isBlank()) {
                             throw new IllegalArgumentException(
                                     "Invalid source server in 'fallback-per-servers." + target + "': expected a non-empty string");
                         }
-                        List<String> targets = fallbackMap.computeIfAbsent(source, key -> new ArrayList<>());
-                        if (!targets.contains(target)) {
-                            targets.add(target);
-                        }
+                        sourceNames.add(source);
                     }
+                    rules.addInverseFallback(target, sourceNames);
                 }
             }
 
@@ -90,11 +91,11 @@ public class FallbackRouterConfig {
                                 .filter(e -> e instanceof String)
                                 .map(e -> (String) e)
                                 .toList();
-                        fallbackMap.put(source, servers);
+                        rules.addFallback(source, servers);
                     }
                 }
             }
-            return fallbackMap;
+            return rules;
         }
     }
 }

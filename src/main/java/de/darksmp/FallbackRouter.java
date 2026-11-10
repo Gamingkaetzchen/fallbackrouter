@@ -19,13 +19,13 @@ import com.velocitypowered.api.proxy.ProxyServer;
 
 import net.kyori.adventure.text.Component;
 
-@Plugin(id = "fallbackrouter", name = "FallbackRouter", version = "1.2.1")
+@Plugin(id = "fallbackrouter", name = "FallbackRouter", version = "1.2.2")
 public class FallbackRouter {
 
     private final ProxyServer server;
     private final Messages messages;
     private final Logger logger;
-    private final Map<String, List<String>> fallbackMap;
+    private final FallbackRules fallbackRules;
 
     // Guice 7 ignores javax.inject.Inject; use Guice's annotation without
     // replacing Velocity-provided dependencies with an empty constructor.
@@ -38,7 +38,7 @@ public class FallbackRouter {
         new LanguageFileExporter(dataDirectory).exportIfMissing();
 
         // ⚙️ Config und Sprache laden
-        this.fallbackMap = FallbackRouterConfig.load(dataDirectory);
+        this.fallbackRules = FallbackRouterConfig.load(dataDirectory);
         this.messages = new Messages(FallbackRouterConfig.language);
 
         logger.info("[FallbackRouter] Loaded with language: " + FallbackRouterConfig.language);
@@ -56,7 +56,7 @@ public class FallbackRouter {
 
     private void tryFallback(Player player, String fromServer) {
         if (!player.isActive()) return;
-        List<String> fallbackTargets = fallbackMap.getOrDefault(fromServer, List.of());
+        List<String> fallbackTargets = fallbackRules.getFallbacks(fromServer);
         server.getScheduler().buildTask(this, () -> {
             attemptConnection(player, fallbackTargets.iterator());
         }).delay(2, TimeUnit.SECONDS).schedule();
