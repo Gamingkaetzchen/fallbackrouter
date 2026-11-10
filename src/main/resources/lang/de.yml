@@ -1,4 +1,18 @@
 fallback:
+  connection_refused: "Verbindung zu %target% abgelehnt; die Fallback-Wiederherstellung wird fortgesetzt."
+  retry_original: "Weiterleitung zu %failed% fehlgeschlagen; %player% wird direkt mit %target% verbunden."
+  no_reason: "Die Verbindung zum Server wurde getrennt."
   kicked: "Du wurdest von %server% gekickt. Versuche Fallback..."
   all_offline: "Alle Fallback-Server sind offline."
   connected: "Erfolgreich mit %target% verbunden."
+  redirecting: "%player% wird zu %target% weitergeleitet."
+
+command:
+  no_permission: "Du hast keine Berechtigung, FallbackRouter neu zu laden."
+  usage: "Verwendung: /fallbackrouter reload"
+  reloaded: "FallbackRouter-Konfiguration und Sprachdateien wurden neu geladen."
+  reload_failed: "Neuladen fehlgeschlagen; die bisherige Konfiguration bleibt aktiv. Details stehen in der Proxy-Konsole."
+
+status:
+  log_filter_unavailable: "Verbindungsprotokollfilter nicht verfügbar; Velocity zeigt weiterhin vollständige Fehlerdetails."
+  loaded: "Mit Sprache geladen: %language%"

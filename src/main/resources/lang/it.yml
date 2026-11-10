@@ -1,0 +1,18 @@
+fallback:
+  connection_refused: "Connessione a %target% rifiutata; proseguo con il recupero del fallback."
+  retry_original: "Reindirizzamento verso %failed% non riuscito; riprovo %target% direttamente per %player%."
+  no_reason: "Connessione al server interrotta."
+  kicked: "Sei stato disconnesso da %server%. Provo un server di fallback..."
+  all_offline: "Tutti i server di fallback sono offline."
+  connected: "Connessione a %target% riuscita."
+  redirecting: "Reindirizzamento di %player% verso %target%."
+
+command:
+  no_permission: "Non hai il permesso di ricaricare FallbackRouter."
+  usage: "Uso: /fallbackrouter reload"
+  reloaded: "Configurazione e file di lingua di FallbackRouter ricaricati."
+  reload_failed: "Ricaricamento non riuscito; la configurazione precedente resta attiva. Controlla la console del proxy."
+
+status:
+  log_filter_unavailable: "Filtro dei log di connessione non disponibile; Velocity continuerà a mostrare i dettagli completi degli errori."
+  loaded: "Lingua caricata: %language%"
