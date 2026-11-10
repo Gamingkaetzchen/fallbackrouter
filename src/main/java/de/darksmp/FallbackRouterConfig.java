@@ -17,7 +17,7 @@ public class FallbackRouterConfig {
 
         if (!Files.exists(configPath)) {
             Files.createDirectories(dataDirectory);
-            Files.writeString(configPath, "language: \"en\"\n\nfallbacks:\n  smp:\n    - smpfb\n    - lobby\n  prac:\n    - pracfb\n    - lobby");
+            Files.writeString(configPath, "language: \"en\"\n\nfallbacks:\n  source-a:\n    - fallback-a\n    - lobby\n  source-b:\n    - fallback-b\n    - lobby");
         }
 
         try (InputStream in = Files.newInputStream(configPath)) {

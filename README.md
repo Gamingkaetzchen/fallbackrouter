@@ -20,9 +20,9 @@ A Velocity plugin that automatically redirects players to fallback servers if th
 language: "en"
 
 fallbacks:
-  smp:
-    - smpfb
+  source-a:
+    - fallback-a
     - lobby
-  prac:
-    - pracfb
+  source-b:
+    - fallback-b
     - lobby

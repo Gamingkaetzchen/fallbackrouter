@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import javax.inject.Inject;
+import com.google.inject.Inject;
 
 import org.slf4j.Logger;
 
@@ -19,7 +19,7 @@ import com.velocitypowered.api.proxy.ProxyServer;
 
 import net.kyori.adventure.text.Component;
 
-@Plugin(id = "fallbackrouter", name = "FallbackRouter", version = "1.5")
+@Plugin(id = "fallbackrouter", name = "FallbackRouter", version = "1.2.0")
 public class FallbackRouter {
 
     private final ProxyServer server;
@@ -27,6 +27,8 @@ public class FallbackRouter {
     private final Logger logger;
     private final Map<String, List<String>> fallbackMap;
 
+    // Guice 7 ignores javax.inject.Inject; use Guice's annotation without
+    // replacing Velocity-provided dependencies with an empty constructor.
     @Inject
     public FallbackRouter(ProxyServer server, @DataDirectory Path dataDirectory, Logger logger) throws Exception {
         this.server = server;
