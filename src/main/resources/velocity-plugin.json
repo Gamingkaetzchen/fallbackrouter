@@ -1,7 +1,7 @@
 {
   "id": "fallbackrouter",
   "name": "FallbackRouter",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "main": "de.darksmp.FallbackRouter",
   "provides": ["yaml"],
   "dependencies": []

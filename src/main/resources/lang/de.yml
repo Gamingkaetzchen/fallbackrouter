@@ -2,3 +2,12 @@ fallback:
   kicked: "Du wurdest von %server% gekickt. Versuche Fallback..."
   all_offline: "Alle Fallback-Server sind offline."
   connected: "Erfolgreich mit %target% verbunden."
+
+command:
+  no_permission: "Du hast keine Berechtigung, FallbackRouter neu zu laden."
+  usage: "Verwendung: /fallbackrouter reload"
+  reloaded: "FallbackRouter-Konfiguration und Sprachdateien wurden neu geladen."
+  reload_failed: "Neuladen fehlgeschlagen; die bisherige Konfiguration bleibt aktiv. Details stehen in der Proxy-Konsole."
+
+status:
+  loaded: "Mit Sprache geladen: %language%"

@@ -11,6 +11,9 @@ import com.google.inject.Inject;
 import org.slf4j.Logger;
 
 import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
+import com.velocitypowered.api.command.SimpleCommand;
+import com.velocitypowered.api.proxy.ConsoleCommandSource;
 import com.velocitypowered.api.event.player.KickedFromServerEvent;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
@@ -19,13 +22,15 @@ import com.velocitypowered.api.proxy.ProxyServer;
 
 import net.kyori.adventure.text.Component;
 
-@Plugin(id = "fallbackrouter", name = "FallbackRouter", version = "1.2.2")
+@Plugin(id = "fallbackrouter", name = "FallbackRouter", version = "1.2.3")
 public class FallbackRouter {
 
     private final ProxyServer server;
-    private final Messages messages;
+    private final Path dataDirectory;
+    private volatile Settings settings;
+
+    private record Settings(FallbackRules rules, Messages messages) {}
     private final Logger logger;
-    private final FallbackRules fallbackRules;
 
     // Guice 7 ignores javax.inject.Inject; use Guice's annotation without
     // replacing Velocity-provided dependencies with an empty constructor.
@@ -34,14 +39,59 @@ public class FallbackRouter {
         this.server = server;
         this.logger = logger;
 
-        // 🔁 Sprachdateien aus JAR extrahieren (falls sie noch nicht vorhanden sind)
+        this.dataDirectory = dataDirectory;
         new LanguageFileExporter(dataDirectory).exportIfMissing();
+        reloadConfiguration();
+    }
 
-        // ⚙️ Config und Sprache laden
-        this.fallbackRules = FallbackRouterConfig.load(dataDirectory);
-        this.messages = new Messages(FallbackRouterConfig.language);
+    private synchronized void reloadConfiguration() throws Exception {
+        FallbackRouterConfig.LoadedConfig loaded = FallbackRouterConfig.load(dataDirectory);
+        Messages messages = new Messages(dataDirectory, loaded.language());
+        // Publish once, only after all parsing and message loading succeed. Readers
+        // must never observe new routes paired with the previous language settings.
+        settings = new Settings(loaded.rules(), messages);
+        logger.info("[FallbackRouter] " + messages.get("status.loaded", Map.of("language", loaded.language())));
+    }
 
-        logger.info("[FallbackRouter] Loaded with language: " + FallbackRouterConfig.language);
+    @Subscribe
+    public void onInitialize(ProxyInitializeEvent event) {
+        var manager = server.getCommandManager();
+        manager.register(manager.metaBuilder("fallbackrouter").plugin(this).build(), new SimpleCommand() {
+            @Override
+            public void execute(Invocation invocation) {
+                if (!hasPermission(invocation)) {
+                    invocation.source().sendMessage(Component.text(settings.messages().getRaw("command.no_permission")));
+                    return;
+                }
+                if (invocation.arguments().length != 1 || !invocation.arguments()[0].equalsIgnoreCase("reload")) {
+                    invocation.source().sendMessage(Component.text(settings.messages().getRaw("command.usage")));
+                    return;
+                }
+                try {
+                    reloadConfiguration();
+                    invocation.source().sendMessage(Component.text(settings.messages().getRaw("command.reloaded")));
+                } catch (Exception e) {
+                    String message = settings.messages().getRaw("command.reload_failed");
+                    logger.error("[FallbackRouter] " + message, e);
+                    invocation.source().sendMessage(Component.text(message));
+                }
+            }
+
+            @Override
+            public boolean hasPermission(Invocation invocation) {
+                return invocation.source() instanceof ConsoleCommandSource
+                        || invocation.source().hasPermission("fallbackrouter.reload");
+            }
+
+            @Override
+            public List<String> suggest(Invocation invocation) {
+                if (!hasPermission(invocation)) return List.of();
+                String[] arguments = invocation.arguments();
+                return arguments.length == 0 || (arguments.length == 1
+                        && "reload".startsWith(arguments[0].toLowerCase(java.util.Locale.ROOT)))
+                        ? List.of("reload") : List.of();
+            }
+        });
     }
 
     @Subscribe
@@ -56,7 +106,7 @@ public class FallbackRouter {
 
     private void tryFallback(Player player, String fromServer) {
         if (!player.isActive()) return;
-        List<String> fallbackTargets = fallbackRules.getFallbacks(fromServer);
+        List<String> fallbackTargets = settings.rules().getFallbacks(fromServer);
         server.getScheduler().buildTask(this, () -> {
             attemptConnection(player, fallbackTargets.iterator());
         }).delay(2, TimeUnit.SECONDS).schedule();
@@ -64,7 +114,7 @@ public class FallbackRouter {
 
     private void attemptConnection(Player player, Iterator<String> targets) {
         if (!targets.hasNext()) {
-            player.disconnect(Component.text(messages.get("fallback.all_offline", Map.of())));
+            player.disconnect(Component.text(settings.messages().get("fallback.all_offline", Map.of())));
             return;
         }
 

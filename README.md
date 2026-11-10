@@ -70,7 +70,7 @@ At least one of the two sections is required.
 
 Existing configuration files are never rewritten. New installations receive
 the original fallback rules plus a commented example of the inverse format.
-Restart the proxy after changing `config.yml`.
+Use `/fallbackrouter reload` after changing `config.yml`.
 
 ## Regex source selectors
 
@@ -113,3 +113,17 @@ source server needs a fallback, including servers registered later. Empty or
 invalid regexes stop configuration loading with an error naming the section.
 Destination values are always concrete Velocity server names: regexes do not
 expand destination lists. No matching rule means no fallback destinations.
+
+## Reloading configuration
+
+Run `/fallbackrouter reload` in game with the `fallbackrouter.reload` permission,
+or `fallbackrouter reload` from the proxy console. The command reloads
+`config.yml`, regex selectors, and language files from the plugin's `lang/`
+directory. Command replies and routing messages are translated in English and
+German. Missing keys fall back first to the bundled selected language, then to
+English, so existing language files automatically get new message defaults
+without being overwritten. Technical exception details in console remain diagnostic text.
+Rules and messages are replaced together only after loading succeeds. If YAML,
+regex, or language loading fails, the previous settings remain active and the
+console reports the error. Reload does not move currently connected players.
+A new plugin JAR still requires a proxy restart.

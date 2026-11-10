@@ -9,9 +9,9 @@ import java.util.*;
 
 public class FallbackRouterConfig {
 
-    public static String language = "en";
+    public record LoadedConfig(FallbackRules rules, String language) {}
 
-    public static FallbackRules load(Path dataDirectory) throws Exception {
+    public static LoadedConfig load(Path dataDirectory) throws Exception {
         Path configPath = dataDirectory.resolve("config.yml");
 
         if (!Files.exists(configPath)) {
@@ -46,6 +46,7 @@ public class FallbackRouterConfig {
             if (!(configObj instanceof Map<?, ?> config)) {
                 throw new IllegalArgumentException("Invalid YAML format in config.yml");
             }
+            String language = "en";
             if (config.get("language") instanceof String langCode) {
                 language = langCode;
             }
@@ -95,7 +96,7 @@ public class FallbackRouterConfig {
                     }
                 }
             }
-            return rules;
+            return new LoadedConfig(rules, language);
         }
     }
 }
