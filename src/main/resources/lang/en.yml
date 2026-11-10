@@ -2,6 +2,7 @@ fallback:
   kicked: "You were kicked from %server%. Trying fallback..."
   all_offline: "All fallback servers are offline."
   connected: "Successfully connected to %target%."
+  redirecting: "Redirecting %player% to %target%."
 
 command:
   no_permission: "You do not have permission to reload FallbackRouter."

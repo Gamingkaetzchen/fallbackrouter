@@ -12,7 +12,7 @@ A Velocity plugin that automatically redirects players to fallback servers if th
 - 🧩 Modular codebase:
   - `FallbackRouterConfig` handles YAML
   - `Messages` manages translations and placeholders
-- 🔒 Graceful fallback handling with ping checks and delay
+- 🔒 Immediate kick-event redirects with ordered connection retries
 
 ## 📁 Example `config.yml`
 
@@ -127,3 +127,25 @@ Rules and messages are replaced together only after loading succeeds. If YAML,
 regex, or language loading fails, the previous settings remain active and the
 console reports the error. Reload does not move currently connected players.
 A new plugin JAR still requires a proxy restart.
+
+## Immediate fallback handling
+
+For server shutdowns, timeouts, and network failures, the plugin sets
+`KickedFromServerEvent.RedirectPlayer` before Velocity processes its fallback
+result. It no longer waits two seconds, pings destinations, or starts a separate
+connection after Velocity's default redirect. The actual destination connection
+is attempted immediately; network connection timeouts may still take time.
+
+If a destination rejects or fails the connection, the next kick event tries the
+next destination from the original source's list. Unknown servers, repeated
+destinations, and the failed source itself are skipped, so a catch-all rule such
+as `fallback-secondary: ['regex:.*']` cannot redirect `fallback-secondary` back to itself. Once the configured
+chain is exhausted, the player is disconnected with `fallback.all_offline`.
+Attempt state is cleared on successful connection or player disconnect. A chain
+already in progress keeps its original rules and message across a reload.
+
+Sources with no destinations and unrelated kicks (for example bans) retain
+Velocity's original handling. A failed voluntary switch while the player still
+has a current server also retains Velocity's handling. This plugin does not
+replace the proxy's initial login server selection. Other plugins that modify
+kick results may affect routing.
