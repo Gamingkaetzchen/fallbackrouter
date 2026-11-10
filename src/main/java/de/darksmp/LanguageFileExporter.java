@@ -9,7 +9,7 @@ import java.util.List;
 public class LanguageFileExporter {
 
     private final Path langFolder;
-    private final List<String> languageFiles = List.of("en.yml", "de.yml");
+    private final List<String> languageFiles = List.of("en.yml", "de.yml", "it.yml");
 
     public LanguageFileExporter(Path dataDirectory) {
         this.langFolder = dataDirectory.resolve("lang");

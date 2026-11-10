@@ -30,7 +30,7 @@ import com.velocitypowered.api.proxy.ProxyServer;
 
 import net.kyori.adventure.text.Component;
 
-@Plugin(id = "fallbackrouter", name = "FallbackRouter", version = "1.2.6")
+@Plugin(id = "fallbackrouter", name = "FallbackRouter", version = "1.2.7")
 public class FallbackRouter {
 
     private final ProxyServer server;
